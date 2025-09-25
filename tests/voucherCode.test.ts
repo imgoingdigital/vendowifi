@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateVoucherCode } from '@/server/services/voucher';
+import { generateVoucherCode } from '../src/server/services/voucher';
 
 describe('voucher code generation', () => {
   it('generates codes of requested length and mostly unique', () => {

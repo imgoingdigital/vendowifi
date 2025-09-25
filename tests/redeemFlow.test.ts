@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getDb } from '@/server/db/client';
-import { plans } from '@/server/db/schema/plans';
-import { vouchers } from '@/server/db/schema/vouchers';
-import { bulkCreateVouchers, redeemVoucher } from '@/server/services/voucher';
+import { getDb } from '../src/server/db/client';
+import { plans } from '../src/server/db/schema/plans';
+import { vouchers } from '../src/server/db/schema/vouchers';
+import { bulkCreateVouchers, redeemVoucher } from '../src/server/services/voucher';
 import { eq } from 'drizzle-orm';
 
 // NOTE: This uses the real DB connection defined by env DATABASE_URL.

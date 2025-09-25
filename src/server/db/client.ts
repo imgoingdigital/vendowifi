@@ -1,4 +1,5 @@
-import 'server-only';
+// In Next.js runtime this hints server-only usage; during Vitest (Vite) it is unresolved.
+try { require('server-only'); } catch { /* noop for test environment */ }
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from './schema';
 
@@ -14,7 +15,9 @@ function synthesizeAppUrl() {
 	return `postgres://${user}:${pass}@${host}:${port}/${dbName}`;
 }
 
-const connectionString = process.env.DATABASE_URL
+const IS_TEST = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
+const connectionString = (IS_TEST && process.env.TEST_DATABASE_URL)
+	|| process.env.DATABASE_URL
 	|| synthesizeAppUrl()
 	|| 'postgres://postgres:postgres@localhost:5432/vendowifi';
 
