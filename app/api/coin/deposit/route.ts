@@ -4,6 +4,7 @@ import { coinSessions } from '@/server/db/schema/coinSessions';
 import { vouchers } from '@/server/db/schema/vouchers';
 import { plans } from '@/server/db/schema/plans';
 import { eq } from 'drizzle-orm';
+import { logAudit } from '@/server/services/audit';
 import { randomBytes } from 'crypto';
 
 function genVoucherCode(len = 10) {
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
         .where(eq(coinSessions.id, session.id));
     });
 
-    const updated = (await db.select().from(coinSessions).where(eq(coinSessions.id, session.id)))[0];
+  const updated = (await db.select().from(coinSessions).where(eq(coinSessions.id, session.id)))[0];
+  await logAudit({ action: 'coin_session.deposit', targetType: 'coin_session', targetId: session.id, meta: { amountCents, accumulated: updated.amountInsertedCents, status: updated.status, voucherId: updated.voucherId } });
     return NextResponse.json({ session: updated });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });

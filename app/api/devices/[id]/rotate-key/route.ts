@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/server/db/client';
 import { devices } from '@/server/db/schema/devices';
 import { eq } from 'drizzle-orm';
+import { logAudit } from '@/server/services/audit';
 import { randomBytes } from 'crypto';
 import bcrypt from 'bcryptjs';
 
@@ -22,7 +23,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .where(eq(devices.id, id))
       .returning();
     if (!updated[0]) return NextResponse.json({ error: 'device not found' }, { status: 404 });
-    return NextResponse.json({ deviceId: id, apiKey: newKey });
+  await logAudit({ action: 'device.rotate_key', targetType: 'device', targetId: id });
+  return NextResponse.json({ deviceId: id, apiKey: newKey });
   } catch (e:any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
   }
