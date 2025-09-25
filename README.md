@@ -1,24 +1,90 @@
 ## VendoWiFi Platform
 
 Self‑hosted voucher WiFi management (plans, vouchers, devices, admin UI) built with Next.js + PostgreSQL.
+\n+### Active Sprint (Micro Targets)
+Current focus (see `DEVELOPMENT.md` for full detail):
+1. Add voucher status `depleted` (separate from `expired`).
+2. Coin session MVP endpoints (session/claim/deposit/cancel + auto-issue voucher).
+3. Device heartbeat + key rotation endpoints.
+4. /api/health endpoint.
+5. Initial test harness (voucher code uniqueness + redeem flow).
+6. Docs sync after lifecycle & coin MVP.
 
-**Audience of this README:** Operators / users who want to run the platform. For architecture & roadmap see `DEVELOPMENT.md`.
+These are in-flight; features below may not yet reflect them until merged.
+Core Capabilities:
+- Plans (define access durations & optional data/speed caps)
+- Voucher generation (bulk) & redemption (unused→active with expiry)
+- Voucher revoke + manual expiry sweep
+- First-user admin bootstrap (Stack Auth)
+- Basic audit logging
+- Basic rate limiting on redeem (in-memory; Redis optional)
+
+Optional/Advanced items have been moved to "Optional Enhancements" below.
 
 ---
-## Features (Current)
+## Features (Current – Including Optional Enhancements)
 
-- Plans & voucher code management
 - Admin UI (plans, vouchers, audit logs, users)
 - Secure auth via Stack + local role mapping (admin/operator)
 - First‑run setup wizard (environment config, DB provision, migrations, admin bootstrap)
 - Voucher redemption endpoint + basic page
 - Audit logging
-- Rate limiting scaffold (optional Redis)
 
-Upcoming: voucher lifecycle (expiry/redeem transitions), device heartbeat, captive portal, RADIUS bridge.
+Upcoming (Enhancements Track): device heartbeat, captive portal splash, RADIUS bridge, health/metrics.
+
+### Newly Added (In-Flight / Experimental)
+API endpoints (subject to change):
+- POST /api/coin/session (create pending coin session)
+- GET  /api/coin/session?id=UUID (poll status, lazy expiry)
+- POST /api/coin/claim (requestCode, machineId)
+- POST /api/coin/deposit (requestCode, amountCents, planId?)
+- POST /api/coin/cancel (requestCode)
+- POST /api/usage/increment (code, mb) – updates data usage & lifecycle
+- POST /api/devices/:id/heartbeat
+- POST /api/devices/:id/rotate-key
+- GET  /api/health
+
+Voucher statuses: unused, active, expired, depleted, revoked.
 
 ---
-## Quick Start (Local)
+## Barebone Quick Start (Fastest Path)
+If you just want it running locally with the core loop:
+
+1. Start Postgres (example Docker):
+```
+docker run --name vendowifi-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:16
+```
+2. Clone & install:
+```
+git clone <repo-url>
+cd vendowifi
+npm install
+```
+3. Create `.env` (minimal):
+```
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
+NEXT_PUBLIC_STACK_PROJECT_ID=your_stack_project_id
+STACK_SECRET_SERVER_KEY=your_stack_server_secret
+```
+4. Run migrations:
+```
+npm run db:migrate
+```
+5. Start dev server:
+```
+npm run dev
+```
+6. Visit `/setup` → sign in (Stack) → promote (auto if first) → go to `/admin`.
+7. Create a plan (or via API) → Bulk generate vouchers → Redeem at `/redeem`.
+
+Done: You have a working barebone voucher flow.
+
+For production hardening or extra features, continue reading.
+
+---
+
+---
+## Full Setup (Advanced / Optional Components)
 
 Prerequisites: Node 18+, PostgreSQL 15/16 (Docker or local), (optional) Redis.
 
@@ -34,7 +100,7 @@ copy .env.example .env  # (Windows)
 # or
 cp .env.example .env    # (Linux/macOS)
 ```
-3. Choose DB env style (A or B) and edit `.env`:
+3. (Optional) If you want privilege separation, choose DB env style (A or B) and edit `.env`:
 Style A (direct URLs):
 ```
 MIGRATION_DATABASE_URL=postgres://vendowifi_owner:Owner123!@localhost:5432/vendowifi
@@ -153,9 +219,29 @@ More dev-focused debugging: see `DEVELOPMENT.md`.
 ---
 ## Roadmap Snapshot
 
-Near-term: voucher lifecycle → device heartbeat → portal bridge → health/metrics → RADIUS integration.
+Barebone Core 1.0 targets are limited to: plan create, voucher generation, redeem + revoke + expiry, admin bootstrap.
+
+Enhancement Track (post‑1.0 near-term): device heartbeat → portal splash/bridge → health/metrics → RADIUS integration.
 
 Full roadmap & ADRs: `DEVELOPMENT.md`.
+
+---
+## Optional Enhancements Overview
+
+Category | Feature | Status
+-------- | ------- | ------
+Provisioning | Role/db bootstrap scripts & UI | Available (optional)
+DB Security | owner/app role separation | Implemented (optional adopt)
+Lifecycle | Manual sweep endpoint, lazy expiry | Implemented
+Devices | Heartbeat + key rotation | Pending
+Network | RADIUS bridge / captive portal splash | Planned
+Observability | /health, metrics, log filters | Planned
+Payments | Stripe / wallet | Backlog
+Automation | Docker, compose, backups script | Planned
+Testing | Integration & E2E harness | Planned
+Performance | Redis rate limiting | Optional (in-memory fallback default)
+
+Use only what you need; core works without adopting these.
 
 ---
 ## License
@@ -194,8 +280,8 @@ Updated: (see git history for timestamp) – This section is the canonical plann
 |-------|-------|--------|-------|
 | P1 Core Data & Vouchers | DB schema (users, plans, vouchers, devices, audit_logs) + basic voucher generation | COMPLETE | Drizzle schema & migrations in place |
 | P2 Admin Auth & UI (re-ordered earlier) | Auth (Stack Auth), admin pages, audit log, bootstrap | COMPLETE (MVP) | Setup flow just added (`/setup`) |
-| P3 Captive Portal MVP | Voucher redeem public page & API | IN PROGRESS | Basic redeem UI & enriched API done; styling/rate limit pending |
-| P4 Voucher Lifecycle & UX | Proper statuses, expiry, redemption UX improvements | NOT STARTED | Next immediate priority |
+| P3 Captive Portal MVP | Voucher redeem public page & API | NEAR COMPLETE | Styling refinements pending (basic rate limit added) |
+| P4 Voucher Lifecycle & UX | Proper statuses, expiry, redemption UX improvements | IN PROGRESS | Redeem + revoke + expiry calc implemented |
 | P5 Device Integration Enhancements | Device API key mgmt, heartbeat, credit flows | PARTIAL | Device table exists; more endpoints needed |
 | P6 RADIUS / Network Bridge | Sync vouchers to RADIUS or gateway | NOT STARTED | Design pending |
 | P7 Observability & Monitoring | Metrics, log viewer, health checks | NOT STARTED | |

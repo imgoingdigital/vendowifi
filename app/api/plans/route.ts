@@ -13,7 +13,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = planCreateSchema.parse(body);
     const db = await getDb();
-    const inserted = await db.insert(plans).values(parsed).returning();
+    // Derive mode for legacy column based on provided limits.
+    let mode: string = 'UNLIMITED';
+    const hasTime = parsed.durationMinutes != null;
+    const hasData = parsed.dataCapMb != null;
+    if (hasTime && hasData) mode = 'MIXED';
+    else if (hasTime) mode = 'TIME_LIMITED';
+    else if (hasData) mode = 'DATA_LIMITED';
+    const inserted = await db.insert(plans).values({
+      name: parsed.name,
+      priceCents: parsed.priceCents,
+      planMode: mode,
+      durationMinutes: parsed.durationMinutes ?? null,
+      dataCapMb: parsed.dataCapMb ?? null,
+      downKbps: parsed.downKbps ?? null,
+      upKbps: parsed.upKbps ?? null,
+    }).returning();
     await logAudit({ action: 'plan.create', targetType: 'plan', targetId: inserted[0].id });
     return NextResponse.json({ plan: inserted[0] });
   } catch (e: any) {
