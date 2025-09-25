@@ -19,7 +19,7 @@ Ordered list of the next concrete implementation steps. Keep this block updated 
 	- /api/health -> { db: 'ok'|'fail', redis: 'ok'|'disabled', time: iso } (503 on db fail).
 5. Test Harness Bootstrap (pending) – add Vitest + two tests
 	- Add Jest/Vitest config, unit test for voucher code uniqueness, integration test redeem flow.
-6. Documentation Sync
+6. Documentation Sync (add validation + new statuses + TEST_DATABASE_URL pattern)
 	- Update README & this file after lifecycle + coin MVP merged (remove outdated status notes).
 
 Definition of Done (micro block): All above merged + tests green + README reflects depleted vs expired distinction.

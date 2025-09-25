@@ -4,14 +4,16 @@ import { vouchers } from '@/server/db/schema/vouchers';
 import { plans } from '@/server/db/schema/plans';
 import { eq } from 'drizzle-orm';
 import { evaluateVoucherLifecycle } from '@/server/services/lifecycle';
+import { usageIncrementSchema } from '@/lib/validation/schemas';
 
 // TODO: replace inline logic with centralized lifecycle evaluator once added.
 
 // Increment data usage for DATA_LIMITED vouchers (MB granularity placeholder)
 export async function POST(req: NextRequest) {
   try {
-    const { code, mb } = await req.json();
-    if (!code || typeof mb !== 'number' || mb <= 0) return NextResponse.json({ error: 'code & positive mb required' }, { status: 400 });
+  const parsed = usageIncrementSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { code, mb } = parsed.data;
     const db = await getDb();
     const rows = await db.select().from(vouchers).where(eq(vouchers.code, code));
     const voucher = rows[0];

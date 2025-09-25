@@ -4,12 +4,17 @@ import { coinSessions } from '@/server/db/schema/coinSessions';
 import { randomBytes } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { logAudit } from '@/server/services/audit';
+import { coinSessionCreateSchema } from '@/lib/validation/schemas';
 
 function code() { return randomBytes(4).toString('hex').slice(0,6).toUpperCase(); }
 
 export async function POST(req: NextRequest) {
   try {
-    const db = await getDb();
+  // Body currently unused; still parse to allow future fields.
+  const body = await req.json().catch(()=>({}));
+  const parsed = coinSessionCreateSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const db = await getDb();
     // Basic session; user linking later (auth optional)
     const requestCode = code();
   const expiresAt = new Date(Date.now() + 120_000); // 2 min window

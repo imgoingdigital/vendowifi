@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/server/db/client';
 import { coinSessions } from '@/server/db/schema/coinSessions';
 import { eq, and } from 'drizzle-orm';
+import { coinSessionClaimSchema } from '@/lib/validation/schemas';
 import { logAudit } from '@/server/services/audit';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { requestCode, machineId } = body || {};
-    if (!requestCode || !machineId) return NextResponse.json({ error: 'requestCode & machineId required' }, { status: 400 });
+  const parsed = coinSessionClaimSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { requestCode, machineId } = parsed.data;
     const db = await getDb();
     const now = new Date();
     const updated = await db.update(coinSessions)

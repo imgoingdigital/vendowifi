@@ -4,6 +4,7 @@ import { coinSessions } from '@/server/db/schema/coinSessions';
 import { vouchers } from '@/server/db/schema/vouchers';
 import { plans } from '@/server/db/schema/plans';
 import { eq } from 'drizzle-orm';
+import { coinSessionDepositSchema } from '@/lib/validation/schemas';
 import { logAudit } from '@/server/services/audit';
 import { randomBytes } from 'crypto';
 
@@ -16,11 +17,9 @@ function genVoucherCode(len = 10) {
 // Input JSON: { requestCode: string, amountCents: number, planId?: string }
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { requestCode, amountCents, planId } = body || {};
-    if (!requestCode || typeof amountCents !== 'number' || amountCents <= 0) {
-      return NextResponse.json({ error: 'requestCode & positive amountCents required' }, { status: 400 });
-    }
+    const parsed = coinSessionDepositSchema.safeParse(await req.json());
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    const { requestCode, amountCents, planId } = parsed.data;
     const db = await getDb();
     const sessionRows = await db.select().from(coinSessions).where(eq(coinSessions.requestCode, requestCode));
     const session = sessionRows[0];

@@ -3,11 +3,13 @@ import { getDb } from '@/server/db/client';
 import { coinSessions } from '@/server/db/schema/coinSessions';
 import { eq, and } from 'drizzle-orm';
 import { logAudit } from '@/server/services/audit';
+import { coinSessionCancelSchema } from '@/lib/validation/schemas';
 
 export async function POST(req: NextRequest) {
   try {
-    const { requestCode } = await req.json();
-    if (!requestCode) return NextResponse.json({ error: 'requestCode required' }, { status: 400 });
+  const parsed = coinSessionCancelSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { requestCode } = parsed.data;
     const db = await getDb();
     const updated = await db.update(coinSessions)
       .set({ status: 'canceled', updatedAt: new Date() })
