@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "db:grant": "node scripts/grantPrivileges.mjs",
   "db:reset": "node scripts/resetDb.mjs",
+    "db:apply-missing": "node scripts/applyMissingMigration.mjs",
     "lint": "next lint || echo 'lint step placeholder'",
     "test": "vitest run"
   },
